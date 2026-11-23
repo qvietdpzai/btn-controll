@@ -47,7 +47,7 @@ jobs:
       - name: Install musl toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y musl-tools
+          sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
 
       - name: Add musl targets
         run: rustup target add x86_64-unknown-linux-musl aarch64-unknown-linux-musl
@@ -55,7 +55,32 @@ jobs:
       - name: Build static releases
         run: |
           cargo build --release --target x86_64-unknown-linux-musl
-          cargo build --release --target aarch64-unknown-linux-musl
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc \
+            cargo build --release --target aarch64-unknown-linux-musl
+
+      - name: Smoke test the static binary
+        run: |
+          cat > smoke-buttons.json <<'JSON'
+          {"buttons":[{"id":"ok","label":"Echo","program":"echo","args":["hello from btn"]}]}
+          JSON
+          BTN_ADDR=127.0.0.1:8799 BTN_TOKEN=smoke BTN_CONFIG=smoke-buttons.json \
+            ./target/x86_64-unknown-linux-musl/release/btn-controll > smoke.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          for _ in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8799/api/health > /dev/null 2>&1; then break; fi
+            sleep 0.25
+          done
+          curl -fsS http://127.0.0.1:8799/api/health | grep -q '"ok":true'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8799/api/buttons)" = "401"
+          curl -fsS -H 'Authorization: Bearer smoke' http://127.0.0.1:8799/api/buttons | grep -q '"id":"ok"'
+          curl -fsS -X POST -H 'Authorization: Bearer smoke' http://127.0.0.1:8799/api/buttons/ok/run | grep -q '"running":true'
+          sleep 1
+          curl -fsS -H 'Authorization: Bearer smoke' http://127.0.0.1:8799/api/buttons | grep -q 'hello from btn'
+          curl -fsS http://127.0.0.1:8799/ | grep -q 'BTN Control'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8799/app.js)" = "200"
+          echo 'smoke test passed'
+          cat smoke.log
 
       - name: Upload x86_64 binary
         uses: actions/upload-artifact@v4
