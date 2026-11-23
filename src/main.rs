@@ -172,7 +172,9 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
 fn load_config() -> (Config, String) {
     let explicit = std::env::var("BTN_CONFIG").ok();
-    let path = explicit.clone().unwrap_or_else(|| "buttons.json".to_owned());
+    let path = explicit
+        .clone()
+        .unwrap_or_else(|| "buttons.json".to_owned());
 
     match std::fs::read_to_string(&path) {
         Ok(text) => match serde_json::from_str::<Config>(&text) {
@@ -430,8 +432,7 @@ async fn run_button(
     Path(id): Path<String>,
     headers: HeaderMap,
 ) -> ApiResult<Json<ButtonView>> {
-    require(&state, &headers)
-        .map_err(|status| (status, "missing or invalid token".to_owned()))?;
+    require(&state, &headers).map_err(|status| (status, "missing or invalid token".to_owned()))?;
 
     let button = state
         .buttons
@@ -508,8 +509,7 @@ async fn stop_button(
     Path(id): Path<String>,
     headers: HeaderMap,
 ) -> ApiResult<Json<serde_json::Value>> {
-    require(&state, &headers)
-        .map_err(|status| (status, "missing or invalid token".to_owned()))?;
+    require(&state, &headers).map_err(|status| (status, "missing or invalid token".to_owned()))?;
 
     let mut slots = state.slots.lock().await;
     let slot = slots
@@ -537,9 +537,7 @@ async fn events(
     Query(query): Query<EventQuery>,
     headers: HeaderMap,
 ) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, StatusCode> {
-    let supplied = query
-        .token
-        .or_else(|| bearer(&headers).map(str::to_string));
+    let supplied = query.token.or_else(|| bearer(&headers).map(str::to_string));
     let ok = supplied
         .as_deref()
         .is_some_and(|token| constant_time_eq(token.as_bytes(), state.token.as_bytes()));

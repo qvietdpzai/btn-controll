@@ -21,7 +21,7 @@ chủ, trạng thái và log được đẩy về trình duyệt theo thời gia
 - Không dùng shell: mỗi nút là `program` + `args`, tránh injection.
 - Token bảo vệ mọi thao tác; mặc định chỉ nghe `127.0.0.1`.
 - Log realtime (SSE), trạng thái running/exit code, timeout tự kill, stop thủ công.
-- Trang demo tĩnh chạy được trên GitHub Pages (không có backend thì tự chuyển sang mô phỏng).
+- Trang demo tĩnh: mở `web/index.html` là chạy được; không có backend thì UI tự chuyển sang mô phỏng.
 
 ## Chạy nhanh
 
@@ -42,6 +42,9 @@ BTN Control v0.1.0
 
 Mở <http://127.0.0.1:8787>, bấm icon chìa khoá và dán token. Token được lưu
 trong `localStorage` của trình duyệt đó.
+
+Muốn xem UI mà chưa cần backend: mở thẳng `web/index.html` (hoặc deploy thư mục
+`web/` lên host tĩnh). Không gọi được `/api/health`, trang tự chuyển sang demo mode.
 
 ### Biến môi trường
 
@@ -132,8 +135,9 @@ Repo được thiết kế để build hoàn toàn trên hạ tầng GitHub:
   tự commit `Cargo.lock`.
 - **Release** (`.github/workflows/release.yml`): push tag `v*` sẽ build cho
   Linux, Windows và macOS rồi đính kèm file nén vào GitHub Release.
-- **Pages** (`.github/workflows/pages.yml`): deploy thư mục `web/` làm demo tĩnh
-  (không backend, UI tự chuyển sang demo mode).
+- **Pages** (`.github/workflows/pages.yml`, tuỳ chọn): deploy thư mục `web/` làm
+  demo tĩnh. Bật một lần ở **Settings → Pages → Source: GitHub Actions**, sau đó
+  chạy workflow `pages` bằng tay (`workflow_dispatch`).
 
 ```bash
 git tag v0.1.0
