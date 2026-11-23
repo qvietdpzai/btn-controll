@@ -22,6 +22,7 @@ tokio = { version = "1", features = [
     "time",
 ] }
 tokio-stream = { version = "0.1", features = ["sync"] }
+tower-http = { version = "0.6", features = ["cors"] }
 
 [profile.release]
 lto = true

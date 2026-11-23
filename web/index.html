@@ -61,7 +61,8 @@
     <section class="banner" id="demo-banner" hidden>
       <strong>Demo mode.</strong>
       Trang tĩnh này không có backend Rust. Chạy <code>cargo run</code> trên máy chủ rồi mở
-      <code>http://127.0.0.1:8787</code> để điều khiển thật.
+      <code>http://127.0.0.1:8787</code> để điều khiển thật. Nếu backend ở domain khác,
+      mở icon chìa khoá và nhập <em>Server URL</em>.
       <a href="https://github.com/qvietdpzai/btn-controll#chạy-nhanh">Hướng dẫn</a>
     </section>
 
@@ -96,13 +97,19 @@
 
   <dialog id="token-dialog" class="modal">
     <form id="token-form">
-      <h2>Access token</h2>
+      <h2>Kết nối server</h2>
       <p>
-        Server in token ra console khi khởi động (hoặc dùng biến môi trường
+        Token in ra console khi server khởi động (hoặc biến môi trường
         <code>BTN_TOKEN</code>). Token được lưu trong <code>localStorage</code> của trình duyệt này.
       </p>
       <label for="token-input">Token</label>
       <input id="token-input" type="password" autocomplete="off" spellcheck="false" placeholder="dán token vào đây…">
+      <label for="api-input">Server URL <span class="optional">— tuỳ chọn</span></label>
+      <input id="api-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://btn.example.com">
+      <p class="modal-note">
+        Để trống nếu UI chạy cùng server. Khi UI ở Netlify, nhập URL backend Rust
+        (server cần <code>BTN_ORIGINS</code> chứa origin của trang này).
+      </p>
       <p class="modal-hint" id="token-hint"></p>
       <div class="modal-actions">
         <button class="btn ghost" type="button" id="token-cancel">Để sau</button>

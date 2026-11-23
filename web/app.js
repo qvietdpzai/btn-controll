@@ -1,11 +1,13 @@
 'use strict';
 
 const TOKEN_KEY = 'btn-controll.token';
+const API_KEY = 'btn-controll.api';
 const MAX_LOG = 300;
 
 const state = {
   demo: false,
   token: '',
+  apiBase: '',
   buttons: [],
   health: null,
   healthAt: 0,
@@ -53,6 +55,8 @@ document.addEventListener('DOMContentLoaded', boot);
 
 async function boot() {
   state.token = localStorage.getItem(TOKEN_KEY) || '';
+  state.apiBase = resolveApiBase();
+  syncBackendHint();
   state.demoAt = Date.now();
   bind();
   updateUptime();
@@ -104,8 +108,35 @@ class HttpError extends Error {
   }
 }
 
-async function request(path, options = {}) {
-  const { auth = true, method = 'GET', body } = options;
+function apiUrl(path) {
+  if (!state.apiBase) return path;
+  return `${state.apiBase}/${String(path).replace(/^\/+/, '')}`;
+}
+
+function normalizeApiBase(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  let url;
+  try {
+    url = new URL(raw);
+  } catch (_) {
+    return '';
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+  return url.href.replace(/\/+$/, '');
+}
+
+function resolveApiBase() {
+  const fromQuery = normalizeApiBase(new URLSearchParams(window.location.search).get('api') || '');
+  if (fromQuery) return fromQuery;
+  return normalizeApiBase(localStorage.getItem(API_KEY) || '');
+}
+
+function syncBackendHint() {
+  $('#status').title = state.apiBase ? `backend: ${state.apiBase}` : 'backend: same origin';
+}
+
+async function request(path, options = {}) {  const { auth = true, method = 'GET', body } = options;
   const headers = { Accept: 'application/json' };
   if (auth && state.token) headers.Authorization = `Bearer ${state.token}`;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
@@ -114,7 +145,7 @@ async function request(path, options = {}) {
   const timer = setTimeout(() => controller.abort(), 8000);
   let response;
   try {
-    response = await fetch(path, {
+    response = await fetch(apiUrl(path), {
       method,
       headers,
       signal: controller.signal,
@@ -169,7 +200,7 @@ function connect() {
   disconnect();
   if (!state.token || state.demo) return;
 
-  const source = new EventSource(`api/events?token=${encodeURIComponent(state.token)}`);
+  const source = new EventSource(apiUrl(`api/events?token=${encodeURIComponent(state.token)}`));
   state.source = source;
 
   source.addEventListener('open', () => setStatus('live'));
@@ -345,24 +376,35 @@ function handleApiError(error) {
 async function onTokenSubmit(event) {
   event.preventDefault();
   const token = $('#token-input').value.trim();
+  const rawApi = $('#api-input').value.trim();
+  const apiBase = normalizeApiBase(rawApi);
+
   if (!token) {
     $('#token-hint').textContent = 'Token không được để trống.';
     return;
   }
-  await applyToken(token);
+  if (rawApi && !apiBase) {
+    $('#token-hint').textContent = 'Server URL phải bắt đầu bằng http:// hoặc https://.';
+    return;
+  }
+  await applyToken(token, apiBase);
 }
 
-async function applyToken(token) {
+async function applyToken(token, apiBase) {
   state.token = token;
+  state.apiBase = apiBase;
   localStorage.setItem(TOKEN_KEY, token);
+  if (apiBase) localStorage.setItem(API_KEY, apiBase);
+  else localStorage.removeItem(API_KEY);
+  syncBackendHint();
   closeTokenDialog();
 
   try {
     state.health = await request('api/health', { auth: false });
     state.healthAt = Date.now();
+    await loadButtons();
     state.demo = false;
     $('#demo-banner').hidden = true;
-    await loadButtons();
     setStatus('live');
     connect();
     toast('Đã kết nối.', 'ok');
@@ -371,7 +413,8 @@ async function applyToken(token) {
       setStatus('locked');
       openTokenDialog('Token không đúng. Thử lại nhé.');
     } else {
-      enterDemo();
+      setStatus(state.demo ? 'demo' : 'offline');
+      toast('Không kết nối được server. Kiểm tra URL, HTTPS và BTN_ORIGINS (CORS).', 'error');
     }
   }
 }
@@ -379,6 +422,7 @@ async function applyToken(token) {
 function openTokenDialog(message = '') {
   const dialog = $('#token-dialog');
   $('#token-input').value = state.token;
+  $('#api-input').value = state.apiBase;
   $('#token-hint').textContent = message;
   if (!dialog.open) dialog.showModal();
   setTimeout(() => $('#token-input').focus(), 30);

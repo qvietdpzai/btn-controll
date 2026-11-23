@@ -411,6 +411,8 @@ h1 {
 }
 .modal input:focus { border-color: rgba(124, 242, 155, 0.55); box-shadow: 0 0 0 3px rgba(124, 242, 155, 0.12); }
 .modal-hint { min-height: 1.1em; color: var(--warn) !important; font-size: 0.76rem !important; }
+.modal-note { color: var(--faint) !important; font-size: 0.73rem !important; }
+.modal label .optional { text-transform: none; letter-spacing: 0; color: var(--faint); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.3rem; }
 
 .toast {

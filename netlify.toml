@@ -1,0 +1,38 @@
+# Netlify hosts the static UI in web/ only. The Rust axum server in src/main.rs
+# cannot run on Netlify: keep it on a VPS or your own machine.
+#
+# UI on Netlify -> open the site, press the key icon, enter the backend URL
+# (https://your-server:8787) and the token printed by the server.
+# Start the backend with BTN_ORIGINS=https://your-site.netlify.app so the
+# browser is allowed to call it (CORS), see README.
+
+[build]
+  publish = "web"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/app.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/style.css"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/icon.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

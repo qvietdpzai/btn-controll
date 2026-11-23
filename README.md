@@ -7,9 +7,8 @@
 Bảng điều khiển web viết bằng **Rust** (axum): mỗi nút chạy một lệnh trên máy
 chủ, trạng thái và log được đẩy về trình duyệt theo thời gian thực qua SSE.
 
-> **Demo tĩnh:** <https://raw.githack.com/qvietdpzai/btn-controll/main/web/index.html>
-> — không có backend nên UI tự chuyển sang demo mode; không gửi token đi đâu.
-> (raw.githack là CDN bên thứ ba, đọc trực tiếp `web/` từ repo.)
+> **Hosting:** UI tĩnh chạy tốt trên Netlify; backend Rust chạy trên VPS hoặc máy
+> của bạn. Xem [Deploy UI lên Netlify](#deploy-ui-lên-netlify).
 
 ```text
 ┌──────────────┐   GET /api/buttons     ┌────────────────────┐
@@ -57,12 +56,11 @@ Muốn xem UI mà chưa cần backend: mở thẳng `web/index.html` (hoặc dep
 | `BTN_ADDR` | `127.0.0.1:8787` | Địa chỉ lắng nghe. Dùng `0.0.0.0:8787` nếu muốn truy cập từ máy khác (hãy đọc phần bảo mật). |
 | `BTN_TOKEN` | token ngẫu nhiên | Token cố định, in ra console khi khởi động. |
 | `BTN_CONFIG` | `./buttons.json` | Đường dẫn file cấu hình nút. |
+| `BTN_ORIGINS` | (tắt) | Origin được phép CORS, cách nhau bởi dấu phẩy, hoặc `*`. Đặt bằng URL Netlify khi UI chạy ở đó. |
 
 ```bash
 BTN_ADDR=0.0.0.0:8787 BTN_TOKEN='doi-token-nay' cargo run
-```
-
-## Cấu hình nút
+```## Cấu hình nút
 
 `buttons.json` (mặc định nhúng trong binary nếu không tìm thấy file):
 
@@ -139,9 +137,6 @@ Repo được thiết kế để build hoàn toàn trên hạ tầng GitHub:
   (chạy được trên mọi distro Linux). Lần chạy đầu tự commit `Cargo.lock`.
 - **Release** (`.github/workflows/release.yml`): push tag `v*` sẽ build cho
   Linux, Windows và macOS rồi đính kèm file nén vào GitHub Release.
-- **Pages** (`.github/workflows/pages.yml`, tuỳ chọn): deploy thư mục `web/` làm
-  demo tĩnh. Bật một lần ở **Settings → Pages → Source: GitHub Actions**, sau đó
-  chạy workflow `pages` bằng tay (`workflow_dispatch`).
 
 ```bash
 git tag v0.1.0
@@ -150,6 +145,39 @@ git push origin v0.1.0
 
 Tải binary từ tab **Actions → artifact** hoặc từ **Releases**.
 
+## Deploy UI lên Netlify
+
+Netlify chỉ host **file tĩnh** — nó không chạy được server axum. Kiến trúc:
+
+- `web/` → Netlify (UI; không có backend thì tự chuyển sang demo mode).
+- `src/main.rs` → VPS/máy local, nơi thực sự chạy lệnh.
+
+`netlify.toml` đã đặt `publish = "web"`, không cần build command.
+
+**Cách 1 — nối repo (khuyến nghị):** Netlify → *Add new site* → *Import an
+existing project* → chọn `qvietdpzai/btn-controll`; build command để trống,
+publish directory `web`.
+
+**Cách 2 — deploy tay:**
+
+```bash
+npx netlify-cli deploy --dir=web --prod
+```
+
+Sau khi có URL Netlify, chạy backend với đúng origin đó:
+
+```bash
+BTN_ADDR=0.0.0.0:8787 \
+BTN_TOKEN='token-manh' \
+BTN_ORIGINS='https://your-site.netlify.app' \
+./btn-controll
+```
+
+Mở site Netlify → icon chìa khoá → nhập **Server URL** (ví dụ
+`https://backend.example.com`) và token. Site HTTPS chỉ gọi được backend HTTPS
+(trình duyệt chặn mixed content). Nếu backend cùng máy với UI thì để trống
+Server URL.
+
 ## Bảo mật
 
 - Mặc định bind `127.0.0.1`: chỉ máy local truy cập được.
@@ -157,6 +185,8 @@ Tải binary từ tab **Actions → artifact** hoặc từ **Releases**.
   có HTTPS (Caddy/Nginx/Cloudflare Tunnel). API không có rate limit.
 - Token so sánh constant-time; UI lưu token trong `localStorage` (XSS trên cùng
   origin có thể đọc được — đừng nhúng script lạ).
+- `BTN_ORIGINS` chỉ nên là origin thật của UI; `*` cho phép mọi site gọi API
+  (vẫn cần token, nhưng đừng dùng `*` lâu dài).
 - Lệnh chạy với quyền của user chạy server. Đừng chạy server bằng `root` nếu
   không cần.
 - Không có shell: `args` không bị interpolation, nhưng chương trình bạn trỏ tới
@@ -173,7 +203,8 @@ btn-controll/
 │   ├── style.css
 │   └── icon.svg
 ├── buttons.json             # cấu hình nút
-├── .github/workflows/       # ci, release, pages
+├── netlify.toml             # publish web/, headers, ghi chú backend
+├── .github/workflows/       # ci, release
 └── Cargo.toml
 ```
 
@@ -182,6 +213,7 @@ btn-controll/
 - [ ] WebSocket thay SSE (hai chiều, heartbeat rõ hơn)
 - [ ] Lưu lịch sử chạy vào SQLite
 - [ ] Nút nhóm / pipeline nhiều bước
+- [ ] Netlify redirect/proxy để UI gọi backend mà không cần CORS
 - [ ] Dockerfile + systemd unit mẫu
 - [ ] Đăng nhập nhiều user, phân quyền theo nút
 

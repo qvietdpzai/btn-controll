@@ -26,18 +26,6 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Commit the lockfile on the first green run
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          if [ ! -f Cargo.lock ]; then
-            cargo generate-lockfile
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add Cargo.lock
-            git commit -m "chore: add Cargo.lock"
-            git push
-          fi
-
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
 
@@ -64,6 +52,7 @@ jobs:
           {"buttons":[{"id":"ok","label":"Echo","program":"echo","args":["hello from btn"]}]}
           JSON
           BTN_ADDR=127.0.0.1:8799 BTN_TOKEN=smoke BTN_CONFIG=smoke-buttons.json \
+            BTN_ORIGINS=https://example.netlify.app \
             ./target/x86_64-unknown-linux-musl/release/btn-controll > smoke.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
@@ -73,6 +62,14 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8799/api/health | grep -q '"ok":true'
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8799/api/buttons)" = "401"
+          curl -fsS -D smoke-headers -o /dev/null -H 'Origin: https://example.netlify.app' \
+            http://127.0.0.1:8799/api/health
+          grep -qi 'access-control-allow-origin: https://example.netlify.app' smoke-headers
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS \
+            -H 'Origin: https://example.netlify.app' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: authorization' \
+            http://127.0.0.1:8799/api/buttons/ok/run)" = "200"
           curl -fsS -H 'Authorization: Bearer smoke' http://127.0.0.1:8799/api/buttons | grep -q '"id":"ok"'
           curl -fsS -X POST -H 'Authorization: Bearer smoke' http://127.0.0.1:8799/api/buttons/ok/run | grep -q '"running":true'
           sleep 1
@@ -81,6 +78,18 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8799/app.js)" = "200"
           echo 'smoke test passed'
           cat smoke.log
+
+      - name: Commit an updated lockfile
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if [ ! -f Cargo.lock ]; then cargo generate-lockfile; fi
+          if [ -n "$(git status --porcelain Cargo.lock)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add Cargo.lock
+            git commit -m "chore: update Cargo.lock"
+            git push
+          fi
 
       - name: Upload x86_64 binary
         uses: actions/upload-artifact@v4

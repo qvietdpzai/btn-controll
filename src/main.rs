@@ -9,6 +9,8 @@
 //!   BTN_ADDR    listen address (default `127.0.0.1:8787`)
 //!   BTN_TOKEN   access token (default: random, printed on startup)
 //!   BTN_CONFIG  path to buttons.json (default `./buttons.json`)
+//!   BTN_ORIGINS comma-separated CORS origins, or `*` (default: off).
+//!               Set it to your Netlify URL when the UI is hosted there.
 
 use std::{
     collections::{HashMap, VecDeque},
@@ -21,7 +23,7 @@ use std::{
 
 use axum::{
     extract::{Path, Query, State},
-    http::{header, HeaderMap, StatusCode},
+    http::{header, HeaderMap, HeaderValue, Method, StatusCode},
     response::{
         sse::{Event, KeepAlive, Sse},
         Html, IntoResponse,
@@ -40,6 +42,7 @@ use tokio::{
     time,
 };
 use tokio_stream::{wrappers::BroadcastStream, Stream, StreamExt};
+use tower_http::cors::{Any, CorsLayer};
 
 const DEFAULT_CONFIG: &str = include_str!("../buttons.json");
 const INDEX_HTML: &str = include_str!("../web/index.html");
@@ -156,12 +159,14 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/buttons/:id/run", post(run_button))
         .route("/api/buttons/:id/stop", post(stop_button))
         .route("/api/events", get(events))
-        .with_state(state);
+        .with_state(state)
+        .layer(cors_layer());
 
     let listener = TcpListener::bind(addr).await?;
     println!("BTN Control v{}", env!("CARGO_PKG_VERSION"));
     println!("  listening : http://{addr}");
     println!("  buttons   : {button_count} ({source})");
+    println!("  cors      : {}", cors_note());
     println!("  token     : {token}");
     println!();
     println!("Open http://{addr} and paste the token above. Ctrl+C to stop.");
@@ -206,6 +211,36 @@ fn generate_token() -> String {
         .take(40)
         .map(char::from)
         .collect()
+}
+
+fn cors_note() -> String {
+    match std::env::var("BTN_ORIGINS") {
+        Ok(value) if !value.trim().is_empty() => value.trim().to_owned(),
+        _ => "off (same-origin only)".to_owned(),
+    }
+}
+
+fn cors_layer() -> CorsLayer {
+    let layer = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
+        .max_age(Duration::from_secs(3600));
+
+    let origins = std::env::var("BTN_ORIGINS").unwrap_or_default();
+    if origins.trim() == "*" {
+        return layer.allow_origin(Any);
+    }
+
+    let allowed: Vec<HeaderValue> = origins
+        .split(',')
+        .filter_map(|origin| origin.trim().parse().ok())
+        .collect();
+
+    if allowed.is_empty() {
+        layer
+    } else {
+        layer.allow_origin(allowed)
+    }
 }
 
 fn now() -> u64 {
