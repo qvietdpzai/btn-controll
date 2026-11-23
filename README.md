@@ -7,6 +7,10 @@
 Bảng điều khiển web viết bằng **Rust** (axum): mỗi nút chạy một lệnh trên máy
 chủ, trạng thái và log được đẩy về trình duyệt theo thời gian thực qua SSE.
 
+> **Demo tĩnh:** <https://raw.githack.com/qvietdpzai/btn-controll/main/web/index.html>
+> — không có backend nên UI tự chuyển sang demo mode; không gửi token đi đâu.
+> (raw.githack là CDN bên thứ ba, đọc trực tiếp `web/` từ repo.)
+
 ```text
 ┌──────────────┐   GET /api/buttons     ┌────────────────────┐
 │  trình duyệt │ ─────────────────────▶ │  btn-controll      │
