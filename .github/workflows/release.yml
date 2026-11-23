@@ -17,10 +17,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            archive: btn-controll-linux-x86_64.tar.gz
+            target: x86_64-unknown-linux-musl
+            archive: btn-controll-linux-x86_64-musl.tar.gz
           - os: windows-latest
+            target: ""
             archive: btn-controll-windows-x86_64.zip
           - os: macos-latest
+            target: ""
             archive: btn-controll-macos.tar.gz
     steps:
       - uses: actions/checkout@v4
@@ -29,14 +32,36 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - name: Install musl toolchain
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Add target
+        if: matrix.target != ''
+        shell: bash
+        run: rustup target add "${{ matrix.target }}"
+
       - name: Build
-        run: cargo build --release
+        shell: bash
+        run: |
+          if [ -n "${{ matrix.target }}" ]; then
+            cargo build --release --target "${{ matrix.target }}"
+          else
+            cargo build --release
+          fi
 
       - name: Package (unix)
         if: runner.os != 'Windows'
+        shell: bash
         run: |
           mkdir -p dist
-          cp target/release/btn-controll dist/
+          BIN=target/release/btn-controll
+          if [ -n "${{ matrix.target }}" ]; then
+            BIN="target/${{ matrix.target }}/release/btn-controll"
+          fi
+          cp "$BIN" dist/
           cp buttons.json README.md LICENSE dist/
           tar -czf "${{ matrix.archive }}" -C dist .
 

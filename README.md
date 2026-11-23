@@ -131,8 +131,8 @@ curl -N "http://127.0.0.1:8787/api/events?token=$TOKEN"
 Repo được thiết kế để build hoàn toàn trên hạ tầng GitHub:
 
 - **CI** (`.github/workflows/ci.yml`): `clippy -D warnings`, `cargo test`, build
-  release trên Ubuntu, upload binary `btn-controll` làm artifact. Lần chạy đầu
-  tự commit `Cargo.lock`.
+  release tĩnh (musl) trên Ubuntu, upload binary `btn-controll` làm artifact
+  (chạy được trên mọi distro Linux). Lần chạy đầu tự commit `Cargo.lock`.
 - **Release** (`.github/workflows/release.yml`): push tag `v*` sẽ build cho
   Linux, Windows và macOS rồi đính kèm file nén vào GitHub Release.
 - **Pages** (`.github/workflows/pages.yml`, tuỳ chọn): deploy thư mục `web/` làm
