@@ -1,0 +1,42 @@
+{
+  "buttons": [
+    {
+      "id": "uptime",
+      "label": "System status",
+      "description": "Xem máy đã chạy bao lâu và tải trung bình.",
+      "program": "uptime",
+      "args": []
+    },
+    {
+      "id": "disk",
+      "label": "Disk usage",
+      "description": "Dung lượng còn trống của các ổ đĩa.",
+      "program": "df",
+      "args": ["-h"]
+    },
+    {
+      "id": "memory",
+      "label": "Memory",
+      "description": "RAM và swap đang dùng.",
+      "program": "free",
+      "args": ["-h"]
+    },
+    {
+      "id": "ping-github",
+      "label": "Ping GitHub",
+      "description": "Bốn gói ICMP tới github.com, tự dừng sau 10 giây.",
+      "program": "ping",
+      "args": ["-c", "4", "github.com"],
+      "timeout_secs": 10
+    },
+    {
+      "id": "btn-launcher",
+      "label": "BTN Launcher",
+      "description": "Ví dụ nút điều khiển thật: đổi program/args sang binary BTN của bạn.",
+      "program": "btn-launcher",
+      "args": ["--version"],
+      "confirm": true,
+      "timeout_secs": 15
+    }
+  ]
+}

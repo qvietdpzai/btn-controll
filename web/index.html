@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#07080c">
+  <meta name="description" content="BTN Control — bảng điều khiển web viết bằng Rust, chạy lệnh và xem log thời gian thực.">
+  <title>BTN Control</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="aurora" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="BTN Control — trang chủ">
+      <img src="icon.svg" alt="" width="38" height="38">
+      <span class="brand-text">
+        <strong>BTN<span>Control</span></strong>
+        <small>Rust web control panel</small>
+      </span>
+    </a>
+    <div class="topbar-actions">
+      <span id="status" class="pill" data-state="connecting">
+        <span class="pill-dot" aria-hidden="true"></span>
+        <span id="status-text">connecting</span>
+      </span>
+      <button class="icon-btn" id="token-btn" type="button" title="Access token" aria-label="Access token">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M14 10a4 4 0 1 0-3.4 3.95L9 15.6V18H6.6l-1.6 1.6V22H2v-3l7.3-7.3A4 4 0 0 0 14 10Zm2-2.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Z"/></svg>
+      </button>
+      <button class="icon-btn" id="refresh-btn" type="button" title="Tải lại" aria-label="Tải lại">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">CONTROL SURFACE</p>
+        <h1>Bảng điều khiển <span class="grad">BTN</span></h1>
+        <p class="lede">
+          Bấm để chạy lệnh trên máy chủ. Trạng thái và log được đẩy về ngay lập tức
+          qua SSE — không cần tải lại trang.
+        </p>
+        <div class="hero-tags">
+          <span class="tag">Rust · axum</span>
+          <span class="tag">SSE live log</span>
+          <span class="tag">Token bảo vệ</span>
+        </div>
+      </div>
+      <div class="stats" id="stats">
+        <div class="stat"><span class="stat-label">Buttons</span><strong id="stat-buttons">0</strong></div>
+        <div class="stat"><span class="stat-label">Running</span><strong id="stat-running">0</strong></div>
+        <div class="stat"><span class="stat-label">Total runs</span><strong id="stat-runs">0</strong></div>
+        <div class="stat"><span class="stat-label">Uptime</span><strong id="stat-uptime">—</strong></div>
+      </div>
+    </section>
+
+    <section class="banner" id="demo-banner" hidden>
+      <strong>Demo mode.</strong>
+      Trang tĩnh này không có backend Rust. Chạy <code>cargo run</code> trên máy chủ rồi mở
+      <code>http://127.0.0.1:8787</code> để điều khiển thật.
+      <a href="https://github.com/qvietdpzai/btn-controll#chạy-nhanh">Hướng dẫn</a>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Buttons</h2>
+        <p id="count-label">đang tải…</p>
+      </div>
+      <div class="grid" id="grid" aria-live="polite">
+        <article class="card skeleton"></article>
+        <article class="card skeleton"></article>
+        <article class="card skeleton"></article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Live log</h2>
+        <button class="btn ghost small" id="clear-log" type="button">Clear</button>
+      </div>
+      <div class="log" id="log" role="log" aria-live="polite" aria-label="Live log"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>BTN Control v<span id="app-version">0.1.0</span> · MIT</span>
+    <span class="footer-links">
+      <a href="https://github.com/qvietdpzai/btn-controll">GitHub</a>
+      <a href="https://github.com/qvietdpzai/btn-controll/blob/main/README.md">Docs</a>
+    </span>
+  </footer>
+
+  <dialog id="token-dialog" class="modal">
+    <form id="token-form">
+      <h2>Access token</h2>
+      <p>
+        Server in token ra console khi khởi động (hoặc dùng biến môi trường
+        <code>BTN_TOKEN</code>). Token được lưu trong <code>localStorage</code> của trình duyệt này.
+      </p>
+      <label for="token-input">Token</label>
+      <input id="token-input" type="password" autocomplete="off" spellcheck="false" placeholder="dán token vào đây…">
+      <p class="modal-hint" id="token-hint"></p>
+      <div class="modal-actions">
+        <button class="btn ghost" type="button" id="token-cancel">Để sau</button>
+        <button class="btn primary" type="submit">Lưu &amp; kết nối</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

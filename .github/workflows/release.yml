@@ -1,0 +1,55 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            archive: btn-controll-linux-x86_64.tar.gz
+          - os: windows-latest
+            archive: btn-controll-windows-x86_64.zip
+          - os: macos-latest
+            archive: btn-controll-macos.tar.gz
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Package (unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p dist
+          cp target/release/btn-controll dist/
+          cp buttons.json README.md LICENSE dist/
+          tar -czf "${{ matrix.archive }}" -C dist .
+
+      - name: Package (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item target/release/btn-controll.exe dist/
+          Copy-Item buttons.json, README.md, LICENSE dist/
+          Compress-Archive -Path dist/* -DestinationPath "${{ matrix.archive }}"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.archive }}
+          generate_release_notes: true
