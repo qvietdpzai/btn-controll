@@ -49,17 +49,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      - name: Add musl target
-        run: rustup target add x86_64-unknown-linux-musl
+      - name: Add musl targets
+        run: rustup target add x86_64-unknown-linux-musl aarch64-unknown-linux-musl
 
-      - name: Build static release
-        run: cargo build --release --target x86_64-unknown-linux-musl
+      - name: Build static releases
+        run: |
+          cargo build --release --target x86_64-unknown-linux-musl
+          cargo build --release --target aarch64-unknown-linux-musl
 
-      - name: Upload binary
+      - name: Upload x86_64 binary
         uses: actions/upload-artifact@v4
         with:
           name: btn-controll-linux-x86_64-musl
           path: target/x86_64-unknown-linux-musl/release/btn-controll
+          if-no-files-found: error
+
+      - name: Upload aarch64 binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: btn-controll-linux-aarch64-musl
+          path: target/aarch64-unknown-linux-musl/release/btn-controll
           if-no-files-found: error
 
   format:
