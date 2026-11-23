@@ -9,6 +9,8 @@ chủ, trạng thái và log được đẩy về trình duyệt theo thời gia
 
 > **Hosting:** UI tĩnh chạy tốt trên Netlify; backend Rust chạy trên VPS hoặc máy
 > của bạn. Xem [Deploy UI lên Netlify](#deploy-ui-lên-netlify).
+>
+> [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/qvietdpzai/btn-controll)
 
 ```text
 ┌──────────────┐   GET /api/buttons     ┌────────────────────┐
@@ -154,9 +156,9 @@ Netlify chỉ host **file tĩnh** — nó không chạy được server axum. Ki
 
 `netlify.toml` đã đặt `publish = "web"`, không cần build command.
 
-**Cách 1 — nối repo (khuyến nghị):** Netlify → *Add new site* → *Import an
-existing project* → chọn `qvietdpzai/btn-controll`; build command để trống,
-publish directory `web`.
+**Cách 1 — nối repo (khuyến nghị):** bấm nút **Deploy to Netlify** ở trên, hoặc
+Netlify → *Add new site* → *Import an existing project* → chọn
+`qvietdpzai/btn-controll`; build command để trống, publish directory `web`.
 
 **Cách 2 — deploy tay:**
 
